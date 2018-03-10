@@ -1,0 +1,143 @@
+
+// SUBJECTIVE LOGIC and MCMC
+// Simulating and comparing basic case studies from the book
+
+var W = 2
+
+var X1 = {r:2.8, s:.2, a:.5}
+var X2 = {r:1.9, s:1.1, a:.95}
+
+var Y1 = {r:5.36, s:6.64, a:0.02}
+var Y2 = {r:3.8, s:8.2, a:.8}
+
+var O2BE = function(opinion){
+  if (opinion.u==0){ return 'error' }
+  else{
+    var r = opinion.b*W / opinion.u
+    var s = opinion.d*W / opinion.u
+    return {r:r,s:s,a:opinion.a}
+  }
+}  
+  
+var BE2O = function(belief){
+  var b = belief.r / (W+belief.r+belief.s)
+  var d = belief.s / (W+belief.r+belief.s)
+  var u = W / (W+belief.r+belief.s)
+  return {b:b,d:d,u:u,a:belief.a}
+}
+
+var BE2B = function(belief){
+  var alpha = belief.r + belief.a*W
+  var beta = belief.s + (1-belief.a)*W
+  return {alpha:alpha,beta:beta}
+}
+
+var O_product = function(o1,o2){
+  var b = (o1.b * o2.b) +
+    ((1-o1.a)*o2.a*o1.b*o2.u + (1-o2.a)*o1.a*o2.b*o1.u) /
+    (1 - o1.a*o2.a)
+  var d = o1.d + o2.d - o1.d*o2.d
+  var u = o1.u*o2.u +
+    ((1-o2.a)*o1.b*o2.u + (1-o1.a)*o2.b*o1.u) /
+    (1 - o1.a*o2.a)
+  var a = o1.a*o2.a
+  return {b:b,d:d,u:u,a:a}
+}
+
+var B_product = function(b1,b2){
+  var options = {method:'MCMC', samples:100000}
+  return Infer(options, function(){
+    var x1 = Beta({a:b1.alpha,b:b1.beta})
+    var x2 = Beta({a:b2.alpha,b:b2.beta})
+    return sample(x1)*sample(x2) 
+  })
+}
+
+
+
+// Define the data
+print('X1:')
+print(X1)
+print('X2:')
+print(X2)
+print('Y1:')
+print(Y1)
+print('Y2:')
+print(Y2)
+
+// Show that the X and Y maps to the same beta
+print('X1 maps to Beta:')
+print(BE2B(X1))
+print('X2 maps to Beta:')
+print(BE2B(X2))
+print('Y1 maps to Beta:')
+print(BE2B(Y1))
+print('Y2 maps to Beta:')
+print(BE2B(Y2))
+
+// Get the opinion the data
+print('X1 maps to opinion:')
+var OX1 = BE2O(X1)
+print(OX1)
+print('X2 maps to opinion:')
+var OX2 = BE2O(X2)
+print(OX2)
+print('Y1 maps to opinion:')
+var OY1 = BE2O(Y1)
+print(OY1)
+print('Y2 maps to opinion:')
+var OY2 = BE2O(Y2)
+print(OY2)
+
+// Compute product of X1 and Y1, print it, transform in beta and plot it
+var O1 = O_product(OX1,OY1)
+print('Product of X1*Y1 computed in SL is: ')
+print(O1)
+var BEp1 = O2BE(O1)
+var Bp1 = BE2B(BEp1)
+print('Projection of X1*Y1 to Beta is: ')
+print(Bp1)
+print('The mean of X1*Y1 computed in SL from the projected Beta is:')
+print(Bp1.alpha / (Bp1.alpha+Bp1.beta))
+print('The variance of X1*Y1 computed in SL from the projected Beta is:')
+print(Bp1.alpha * Bp1.beta / 
+      (Math.pow(Bp1.alpha+Bp1.beta,2)*(Bp1.alpha+Bp1.beta+1)))
+print('Plot of X1*Y1 computed in SL and projected to Beta is: ')
+viz(Beta({a:Bp1.alpha,b:Bp1.beta}),{samples:50000})
+
+
+// Compute product of X2 and Y2, print it, transform in beta and plot it
+var O2 = O_product(OX2,OY2)
+print('Product of X2*Y2 computed in SL is: ')
+print(O2)
+var BEp2 = O2BE(O2)
+var Bp2 = BE2B(BEp2)
+print('Projection of X2*Y2 to Beta is: ')
+print(Bp2)
+print('The mean of X2*Y2 computed in SL from the projected Beta is:')
+print(Bp2.alpha / (Bp2.alpha+Bp2.beta))
+print('The variance of X2*Y2 computed in SL from the projected Beta is:')
+print(Bp2.alpha * Bp2.beta / 
+      (Math.pow(Bp2.alpha+Bp2.beta,2)*(Bp2.alpha+Bp2.beta+1)))
+print('Plot of X2*Y2 computed in SL and projected to Beta is: ')
+viz(Beta({a:Bp2.alpha,b:Bp2.beta}),{samples:50000})
+
+// Transform opinions in beta, multiply them, plot pdf
+var B1 = BE2B(X1)
+var B2 = BE2B(Y1)
+print('Projection of X1 or X2 to Beta is: ')
+print(B1)
+print('Projection of Y1 or Y2 to Beta is: ')
+print(B2)
+var pdf = B_product(B1,B2)
+var mean = expectation(pdf)
+print('The mean of B1*B2 computed by MCMC is:')
+print(mean)
+print('The variance of B1*B2 computed by MCMC is:')
+print(expectation(pdf, function(x){
+  return Math.pow((x-mean),2)
+}))
+print('Plot of the pdf of B1*B2 computed by MCMC is: ')
+viz(pdf,{samples:50000})
+
+
