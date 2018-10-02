@@ -3,7 +3,7 @@
 Simulation code for evaluating subjective logic operators using Monte Carlo simulations
 
 
-### Reference
+### References
 
 \[1\] Zennaro, F. M.; Ivanovska, M. & Jøsang, A. An Empirical Evaluation of the Approximation of Subjective Logic Operators Using Monte Carlo Simulations arXiv preprint arXiv:1808.05884, 2018
 
